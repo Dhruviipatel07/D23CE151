@@ -1,0 +1,104 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+#include <stdlib.h> // Include for malloc and free
+
+// Define the parser structure
+typedef struct {
+    char* input_string;
+    int index;
+} RecursiveDescentParser;
+
+// Function prototypes
+bool parse_s(RecursiveDescentParser* parser);
+bool parse_l(RecursiveDescentParser* parser);
+bool parse_l_prime(RecursiveDescentParser* parser);
+
+// Initialize the parser
+void init_parser(RecursiveDescentParser* parser, char* input_string) {
+    parser->input_string = input_string;
+    parser->index = 0;
+}
+
+// Main parsing function
+char* parse(RecursiveDescentParser* parser) {
+    if (parse_s(parser)) {
+        if (parser->index == strlen(parser->input_string)) {
+            return "Valid string";
+        } else {
+            return "Invalid string (Extra characters at the end)";
+        }
+    } else {
+        return "Invalid string";
+    }
+}
+
+// Parsing function for 'S' rule
+bool parse_s(RecursiveDescentParser* parser) {
+    if (parser->index < strlen(parser->input_string)) {
+      if (parser->input_string[parser->index] == '(') {
+          parser->index++;
+          if (parse_l(parser)) {
+              if (parser->index < strlen(parser->input_string) && parser->input_string[parser->index] == ')') {
+                  parser->index++;
+                  return true;
+              } else {
+                  return false; // Missing closing parenthesis
+              }
+          } else {
+              return false; // Invalid 'L'
+          }
+      } else if (parser->input_string[parser->index] == 'a') {
+          parser->index++;
+          return true;
+      }
+    }
+    return false; // Unexpected character or end of string
+}
+
+
+// Parsing function for 'L' rule
+bool parse_l(RecursiveDescentParser* parser) {
+    if (parse_s(parser)) {
+        return parse_l_prime(parser); // L' can be epsilon
+    } else {
+        return false;
+    }
+}
+
+// Parsing function for 'L'' rule
+bool parse_l_prime(RecursiveDescentParser* parser) {
+    if (parser->index < strlen(parser->input_string) && parser->input_string[parser->index] == ',') {
+        parser->index++;
+        if (parse_s(parser)) {
+            return parse_l_prime(parser);
+        } else {
+            return false;
+        }
+    } else {
+        return true; // Epsilon case
+    }
+}
+
+int main() {
+    char* test_cases[] = {
+        "a",
+        "(a)",
+        "(a,a)",
+        "(a,(a,a),a)",
+        "(a,a),(a,a)", // Although grammatically correct, this will be invalid, as the grammar describes only a single S production.
+        "a)",
+        "(a,a, (a,a),a)",
+        "(a,b)" // Added a test case with an invalid character
+    };
+    int num_test_cases = sizeof(test_cases) / sizeof(test_cases[0]);
+
+    for (int i = 0; i < num_test_cases; i++) {
+        RecursiveDescentParser parser;
+        init_parser(&parser, test_cases[i]);
+        char* result = parse(&parser);
+        printf("Input: %s, Output: %s\n", test_cases[i], result);
+    }
+
+    return 0;
+}
